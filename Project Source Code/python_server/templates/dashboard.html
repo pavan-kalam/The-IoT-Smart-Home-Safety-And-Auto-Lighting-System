@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>🏠 Smart Home Safety & Auto-Lighting System</h1>
+                <div class="header-actions">
+                    <a href="{{ url_for('visualization') }}" class="btn-visualization" style="margin-right: 15px;">📊 Visualization</a>
+                    <div class="notification-bell" id="notification-bell" onclick="toggleNotifications()">
+                        🔔 <span class="notification-badge" id="notification-badge">0</span>
+                    </div>
+                    <span class="welcome-text">Welcome, {{ username }}!</span>
+                    <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown" id="notification-dropdown">
+            <div class="notification-header">
+                <h3>Notifications</h3>
+                <div>
+                    <button onclick="clearNotifications()" class="btn-clear" style="margin-right: 10px; padding: 5px 10px; font-size: 0.8em;">Clear All</button>
+                    <button onclick="toggleNotifications()" class="close-btn">×</button>
+                </div>
+            </div>
+            <div class="notification-list" id="notification-list">
+                <div class="notification-item">Loading notifications...</div>
+            </div>
+        </div>
+
+        <!-- Status Cards (Top Row - Clickable) -->
+        <div class="status-cards">
+            <div class="status-card motion-card" onclick="showMotionHistory()">
+                <div class="status-icon">👁️</div>
+                <div class="status-info">
+                    <h3>Motion Detection</h3>
+                    <div class="status-value" id="motion-status">No Motion</div>
+                    <div class="status-badge" id="motion-badge">Inactive</div>
+                </div>
+            </div>
+            
+            <div class="status-card door-card" onclick="showDoorHistory()">
+                <div class="status-icon">🚪</div>
+                <div class="status-info">
+                    <h3>Door Status</h3>
+                    <div class="status-value" id="door-status">Closed</div>
+                    <div class="status-badge" id="door-badge">Closed</div>
+                </div>
+            </div>
+            
+            <div class="status-card fire-card" onclick="showFireHistory()">
+                <div class="status-icon">🔥</div>
+                <div class="status-info">
+                    <h3>Fire Detection</h3>
+                    <div class="status-value" id="flame-status">Safe</div>
+                    <div class="status-badge" id="flame-badge">Safe</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Left Column: Sensors -->
+            <div class="sensors-section">
+                <h2> Sensor Readings</h2>
+                <div class="sensor-grid">
+                    <div class="sensor-card">
+                        <div class="sensor-label">🌡️ Temperature</div>
+                        <div class="sensor-value" id="temperature">--°C</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-label">💧 Humidity</div>
+                        <div class="sensor-value" id="humidity">--%</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-label">💨 Air Quality</div>
+                        <div class="sensor-value" id="air-quality">--</div>
+                        <div class="sensor-badge" id="air-badge">Good</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-label">💡 Light Level</div>
+                        <div class="sensor-value" id="light-level">--</div>
+                        <div class="sensor-badge" id="light-badge">Dark</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Controls -->
+            <div class="controls-section">
+                <h2> Control Panel</h2>
+                <div class="control-group">
+                    <label>Mode:</label>
+                    <button class="btn-control" id="mode-btn" onclick="toggleMode()">Auto</button>
+                    <span class="status-text" id="mode-status">Auto Mode Active</span>
+                </div>
+                <div class="control-group">
+                    <label>Light Control:</label>
+                    <button class="btn-control" id="light-btn" onclick="toggleLight()">Turn On</button>
+                    <span class="status-text" id="light-status">Light: OFF</span>
+                </div>
+                <div class="control-group">
+                    <label>Buzzer/Alerts:</label>
+                    <button class="btn-control btn-danger" id="buzzer-btn" onclick="toggleBuzzer()">Turn Off Alerts</button>
+                    <span class="status-text" id="buzzer-status">Buzzer: OFF</span>
+                </div>
+                <div class="control-group">
+                    <label>Brightness:</label>
+                    <input type="range" min="0" max="100" value="100" class="slider" id="brightness-slider" onchange="setBrightness(this.value)">
+                    <span class="slider-value" id="brightness-value">100%</span>
+                </div>
+                <div class="control-group">
+                    <label>Home Mode:</label>
+                    <button class="btn-control" id="home-mode-btn" onclick="toggleHomeMode()">Home</button>
+                    <span class="status-text" id="home-mode-status">Someone Home</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensor Events Table -->
+        <div class="section-card">
+            <h2> Sensor Events & Actions <span id="sensor-events-status" style="font-size: 0.6em; color: #666; font-weight: normal;">(Auto-refreshing every 2s)</span></h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sensor Name</th>
+                            <th>Sensor Information</th>
+                            <th>Auto Action</th>
+                            <th>Light Control</th>
+                            <th>Buzzer Control</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sensor-events-body">
+                        <tr>
+                            <td colspan="5" class="loading">Loading sensor events...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Event Log with Pagination -->
+        <div class="section-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">📋 Event Log</h2>
+                <button class="btn-clear" onclick="clearEvents()">Clear All Events</button>
+            </div>
+            <div class="pagination-controls">
+                <button class="btn-pagination" id="prev-btn" onclick="loadPreviousEvents()" disabled>← Previous</button>
+                <span class="page-info" id="page-info">Page 1 of 1</span>
+                <button class="btn-pagination" id="next-btn" onclick="loadNextEvents()" disabled>Next →</button>
+            </div>
+            <div class="event-log" id="event-list">
+                <div class="loading">Loading events...</div>
+            </div>
+        </div>
+
+        <!-- Sensor Board Controls (Collapsible) -->
+        <div class="section-card collapsible">
+            <h2 onclick="toggleSection(this)">📡 Sensor Board Controls (ESP32 Board 1) ▼</h2>
+            <div class="collapsible-content" id="sensor-board-controls">
+                <div class="control-group">
+                    <label>Monitoring:</label>
+                    <button class="btn-control" id="monitoring-btn" onclick="toggleMonitoring()">Start</button>
+                    <span class="status-text" id="monitoring-status">Monitoring: Stopped</span>
+                </div>
+                <div class="control-group">
+                    <label>Encryption:</label>
+                    <button class="btn-control" id="encryption-btn" onclick="toggleEncryption()">Disable</button>
+                    <span class="status-text" id="encryption-status">Encryption: Enabled</span>
+                </div>
+                <div class="control-group">
+                    <label>Upload Interval:</label>
+                    <input type="range" min="1000" max="10000" value="2000" step="500" class="slider" id="upload-interval-slider" onchange="setUploadInterval(this.value)">
+                    <span class="slider-value" id="upload-interval-value">2000 ms</span>
+                </div>
+                <div class="control-group">
+                    <button class="btn-control" onclick="showSensorBoardInfo()">Show Sensor Board Info</button>
+                    <button class="btn-control" onclick="showWiFiSettings()">Change WiFi Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Board Configuration (Collapsible) -->
+        <div class="section-card collapsible">
+            <h2 onclick="toggleSection(this)">🔧 Control Board Configuration (ESP32 Board 2) ▼</h2>
+            <div class="collapsible-content" id="control-board-config">
+                <div class="control-group">
+                    <label><strong>Enter Server URL for Control Board:</strong></label>
+                    <div class="input-group">
+                        <input type="text" id="control-board-url-input" class="input-text" placeholder="http://192.168.1.222:8888">
+                        <button class="btn-control" onclick="saveControlBoardUrl()">Save URL</button>
+                    </div>
+                    <div class="status-text" id="control-board-url-status">Not configured</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="motion-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👁️ Motion Detection History</h2>
+                <span class="modal-close" onclick="closeModal('motion-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="motion-history-content">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="door-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚪 Door Status History</h2>
+                <span class="modal-close" onclick="closeModal('door-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="door-history-content">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="fire-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔥 Fire Detection History</h2>
+                <span class="modal-close" onclick="closeModal('fire-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="fire-history-content">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WiFi Settings Modal -->
+    <div id="wifi-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📡 WiFi Settings (Sensor Board)</h2>
+                <span class="modal-close" onclick="closeModal('wifi-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>WiFi SSID:</label>
+                    <input type="text" id="wifi-ssid-input" class="input-text" placeholder="Enter WiFi SSID">
+                </div>
+                <div class="form-group">
+                    <label>WiFi Password:</label>
+                    <input type="password" id="wifi-password-input" class="input-text" placeholder="Enter WiFi Password">
+                </div>
+                <div class="form-group">
+                    <label>Server URL:</label>
+                    <input type="text" id="server-url-input" class="input-text" placeholder="http://192.168.1.222:8888/api/sensor-data">
+                </div>
+                <div class="form-group">
+                    <button class="btn-control" onclick="saveWiFiSettings()">Save WiFi Settings</button>
+                    <button class="btn-control" onclick="closeModal('wifi-modal')" style="background: #999;">Cancel</button>
+                </div>
+                <div id="wifi-settings-status" class="status-text" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
