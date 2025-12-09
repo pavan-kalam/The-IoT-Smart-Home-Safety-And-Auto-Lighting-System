@@ -1,0 +1,20 @@
+Required Arduino Libraries for ESP32 Sensor Board:
+
+1. ArduinoJson (by Benoit Blanchon)
+   - Version: 6.x
+   - Install via: Tools → Manage Libraries → Search "ArduinoJson"
+
+2. DHT sensor library (by Adafruit)
+   - Install via: Tools → Manage Libraries → Search "DHT sensor library"
+
+3. Adafruit Unified Sensor (by Adafruit)
+   - Required dependency for DHT library
+   - Install via: Tools → Manage Libraries → Search "Adafruit Unified Sensor"
+
+4. ESP32 Board Support Package
+   - Install via: Tools → Board → Boards Manager → Search "ESP32"
+
+Note: The code uses standard ESP32 libraries that come with the board package:
+- WiFi.h
+- HTTPClient.h
+
