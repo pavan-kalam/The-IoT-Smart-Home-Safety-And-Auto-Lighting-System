@@ -143,17 +143,12 @@ After uploading both boards:
 The Control Board uses **hardcoded WiFi credentials** that must be updated in the code:
 
 1. Open `Project Source Code/esp32_control_board/esp32_control_board.ino`
-2. Find lines 57-58:
-   ```cpp
-   const char* WIFI_SSID = "Avengers";        // Change this to your WiFi network name
-   const char* WIFI_PASSWORD = "Google@12345";  // Change this to your WiFi password
-   ```
-3. Update with your WiFi credentials:
+2. Update with your WiFi credentials:
    ```cpp
    const char* WIFI_SSID = "YourWiFiNetwork";
    const char* WIFI_PASSWORD = "YourWiFiPassword";
    ```
-4. Save and re-upload the code to Control Board
+3. Save and re-upload the code to Control Board
 
 **Note:** The Control Board requires WiFi to communicate with the Python server. ESP-NOW communication with Sensor Board works independently of WiFi.
 
