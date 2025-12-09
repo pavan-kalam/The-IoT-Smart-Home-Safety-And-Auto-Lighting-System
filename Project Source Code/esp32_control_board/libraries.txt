@@ -1,0 +1,23 @@
+Required Arduino Libraries for ESP32 Control Board:
+
+1. ArduinoJson (by Benoit Blanchon)
+   - Version: 6.x
+   - Install via: Tools → Manage Libraries → Search "ArduinoJson"
+
+2. ESP32 Board Support Package
+   - Install via: Tools → Board → Boards Manager → Search "ESP32"
+
+Optional Libraries (for enhanced features):
+
+3. ESP32 Mail Client (for email notifications)
+   - Install via: Tools → Manage Libraries → Search "ESP32 Mail Client"
+
+4. WebSockets (for real-time updates - already included in ESP32)
+
+Note: The code uses standard ESP32 libraries that come with the board package:
+- WiFi.h
+- WebServer.h
+- SPIFFS.h
+- Preferences.h
+- time.h
+
