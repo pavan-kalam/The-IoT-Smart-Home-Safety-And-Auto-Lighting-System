@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Visualization - Smart Home Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .chart-container h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        .visualization-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .update-status {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>📊 Sensor Visualization</h1>
+                <div class="header-actions">
+                    <a href="{{ url_for('dashboard') }}" class="btn-visualization" style="background: #667eea;">🏠 Dashboard</a>
+                    <span class="welcome-text">Welcome, {{ username }}!</span>
+                    <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="visualization-header">
+            <h2>Real-Time Sensor Data Graphs</h2>
+            <div class="update-status">
+                <span>Last updated: <span id="last-update">Loading...</span></span>
+                <span style="margin-left: 15px;">Auto-refresh: Every 10 seconds</span>
+            </div>
+        </div>
+
+        <!-- Temperature & Humidity Chart -->
+        <div class="chart-container">
+            <h3>🌡️ Temperature & Humidity</h3>
+            <div class="chart-wrapper">
+                <canvas id="tempHumidityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Air Quality Chart -->
+        <div class="chart-container">
+            <h3>💨 Air Quality</h3>
+            <div class="chart-wrapper">
+                <canvas id="airQualityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Sound Level Chart -->
+        <div class="chart-container">
+            <h3>🔊 Sound Level</h3>
+            <div class="chart-wrapper">
+                <canvas id="soundChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Light Level Chart -->
+        <div class="chart-container">
+            <h3>💡 Light Level</h3>
+            <div class="chart-wrapper">
+                <canvas id="lightChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Motion, Door, Fire Status Chart -->
+        <div class="chart-container">
+            <h3>👁️ Motion, 🚪 Door, 🔥 Fire Status</h3>
+            <div class="chart-wrapper">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let charts = {};
+        let updateInterval;
+
+        // Chart configuration
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                },
+                y: {
+                    display: true,
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        };
+
+        // Initialize charts
+        function initCharts() {
+            // Temperature & Humidity Chart
+            const tempHumidityCtx = document.getElementById('tempHumidityChart').getContext('2d');
+            charts.tempHumidity = new Chart(tempHumidityCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4
+                    }, {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Air Quality Chart
+            const airQualityCtx = document.getElementById('airQualityChart').getContext('2d');
+            charts.airQuality = new Chart(airQualityCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Air Quality',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Sound Level Chart
+            const soundCtx = document.getElementById('soundChart').getContext('2d');
+            charts.sound = new Chart(soundCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sound Level',
+                        data: [],
+                        borderColor: 'rgb(153, 102, 255)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Light Level Chart
+            const lightCtx = document.getElementById('lightChart').getContext('2d');
+            charts.light = new Chart(lightCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Light Level',
+                        data: [],
+                        borderColor: 'rgb(255, 206, 86)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Status Chart (Motion, Door, Fire)
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            charts.status = new Chart(statusCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Motion',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4
+                    }, {
+                        label: 'Door Open',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4
+                    }, {
+                        label: 'Fire',
+                        data: [],
+                        borderColor: 'rgb(255, 0, 0)',
+                        backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            ...chartOptions.scales.y,
+                            min: 0,
+                            max: 1,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return value === 1 ? 'Yes' : 'No';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update charts with new data
+        async function updateCharts() {
+            try {
+                const response = await fetch(`${API_BASE}/sensor-data/history?limit=50`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch sensor data');
+                }
+                const result = await response.json();
+                const data = result.data;
+
+                if (!data || data.length === 0) {
+                    return;
+                }
+
+                // Extract labels (time) and data
+                const labels = data.map(item => {
+                    if (item.timestamp) {
+                        try {
+                            const date = new Date(item.timestamp);
+                            return date.toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                second: '2-digit',
+                                hour12: false 
+                            });
+                        } catch (e) {
+                            return item.timestamp;
+                        }
+                    }
+                    return '';
+                });
+
+                // Update Temperature & Humidity Chart
+                charts.tempHumidity.data.labels = labels;
+                charts.tempHumidity.data.datasets[0].data = data.map(item => item.temperature);
+                charts.tempHumidity.data.datasets[1].data = data.map(item => item.humidity);
+                charts.tempHumidity.update('none');
+
+                // Update Air Quality Chart
+                charts.airQuality.data.labels = labels;
+                charts.airQuality.data.datasets[0].data = data.map(item => item.air_quality);
+                charts.airQuality.update('none');
+
+                // Update Sound Level Chart
+                charts.sound.data.labels = labels;
+                charts.sound.data.datasets[0].data = data.map(item => item.sound_level);
+                charts.sound.update('none');
+
+                // Update Light Level Chart
+                charts.light.data.labels = labels;
+                charts.light.data.datasets[0].data = data.map(item => item.light_level);
+                charts.light.update('none');
+
+                // Update Status Chart
+                charts.status.data.labels = labels;
+                charts.status.data.datasets[0].data = data.map(item => item.pir_motion ? 1 : 0);
+                charts.status.data.datasets[1].data = data.map(item => item.door_open ? 1 : 0);
+                charts.status.data.datasets[2].data = data.map(item => item.flame_detected ? 1 : 0);
+                charts.status.update('none');
+
+                // Update last update time
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (err) {
+                console.error('Error updating charts:', err);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateCharts();
+            
+            // Update every 10 seconds
+            updateInterval = setInterval(updateCharts, 10000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+
